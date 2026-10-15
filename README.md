@@ -62,3 +62,33 @@ These values are placeholders and need to be confirmed:
   advice and that counsel should review the flow for each market.
 - Do not describe features that are not built yet as shipped. The roadmap section
   marks Paddle, Lemon Squeezy, win-back emails, and A/B testing as planned.
+
+## Product frontend
+
+The repository also contains the embeddable cancel widget and the owner dashboard.
+Both run against a typed API contract (`src/shared/types.ts`). The default backend is an
+in-browser demo (`src/shared/mock/`) that stores data in localStorage. The HTTP client
+(`src/shared/http/`) is ready for the real backend.
+
+| URL | What it is |
+| --- | --- |
+| `/app` | Owner dashboard (demo sign-in: any email, password of 8+ characters) |
+| `/embed-demo/index.html` | A host page that embeds the widget the way a customer would |
+| `/widget/stopbill.js` | Built widget bundle (generated, git-ignored) |
+
+```bash
+npm run build:widget   # builds public/widget/stopbill.js (also runs before dev and build)
+```
+
+Widget embed:
+
+```html
+<script src="https://cdn.stopbill.dev/v1/stopbill.js" data-token="SIGNED_CUSTOMER_TOKEN" async></script>
+```
+
+Attributes: `data-token` (required), `data-label`, `data-mount`, `data-api`, `data-mode`
+(`demo` uses the in-browser backend; never use it in production). Events:
+`stopbill:outcome` (`scheduled`, `canceled`, `saved`, `unconfirmed`) on the host element.
+
+Environment variables: `VITE_API_MODE` (`demo` by default, or `live`) and
+`VITE_API_BASE_URL` (empty means same origin).
