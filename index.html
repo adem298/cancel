@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#09090b" />
+    <title>Stopbill: Cancellations that actually stop billing</title>
+    <meta
+      name="description"
+      content="Stopbill is a cancel flow for Stripe subscriptions. Save offers, real cancellation through the Stripe API, and a billing check that alerts you if a subscription is still active."
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://stopbill.dev/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Stopbill" />
+    <meta property="og:title" content="Stopbill: Cancellations that actually stop billing" />
+    <meta
+      property="og:description"
+      content="A cancel flow for Stripe subscriptions that verifies billing actually stopped."
+    />
+    <meta property="og:url" content="https://stopbill.dev/" />
+    <meta property="og:image" content="https://stopbill.dev/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Stopbill: Cancellations that actually stop billing" />
+    <meta
+      name="twitter:description"
+      content="A cancel flow for Stripe subscriptions that verifies billing actually stopped."
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Stopbill",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "Cancel flow for Stripe subscriptions with save offers, real cancellation through the Stripe API, and billing verification.",
+        "offers": [
+          { "@type": "Offer", "name": "Starter", "price": "29", "priceCurrency": "USD", "billingIncrement": "P1M" },
+          { "@type": "Offer", "name": "Growth", "price": "79", "priceCurrency": "USD", "billingIncrement": "P1M" },
+          { "@type": "Offer", "name": "Scale", "price": "199", "priceCurrency": "USD", "billingIncrement": "P1M" }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
