@@ -14,12 +14,19 @@ import {
 const manifest = JSON.parse(readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
 
 describe('extension manifest (privacy guarantees)', () => {
-  it('asks only for storage', () => {
-    expect(manifest.permissions).toEqual(['storage']);
+  it('asks only for storage, identity (to know which Chrome account is signed in), and that email', () => {
+    expect([...manifest.permissions].sort()).toEqual(['identity', 'identity.email', 'storage']);
   });
 
-  it('has no host access and no content scripts, so it cannot read or click pages', () => {
-    expect(manifest.host_permissions).toBeUndefined();
+  it('can reach only the Gmail API, never arbitrary sites', () => {
+    expect(manifest.host_permissions).toEqual(['https://gmail.googleapis.com/*']);
+  });
+
+  it('requests only the read-only Gmail scope', () => {
+    expect(manifest.oauth2.scopes).toEqual(['https://www.googleapis.com/auth/gmail.readonly']);
+  });
+
+  it('has no content scripts and no background page, so it cannot read or click pages', () => {
     expect(manifest.content_scripts).toBeUndefined();
     expect(manifest.background).toBeUndefined();
   });

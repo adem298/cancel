@@ -1,11 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Stopbill",
-  "version": "0.2.0",
-  "description": "Free guided cancellation for ChatGPT. You click every step yourself.",
+  "version": "0.3.0",
+  "description": "Free guided ChatGPT cancellation, plus a read-only scan of AI billing receipts in Gmail.",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Stopbill"
   },
-  "permissions": ["storage"]
+  "permissions": ["storage", "identity", "identity.email"],
+  "host_permissions": ["https://gmail.googleapis.com/*"],
+  "oauth2": {
+    "client_id": "REPLACE_WITH_CHROME_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
+  }
 }

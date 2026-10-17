@@ -25,16 +25,33 @@ npm run build        # typecheck, production build, extension zip
 
 Firefox is not supported yet. The extension is not in the Chrome Web Store.
 
+## Gmail scan: setup (developer)
+
+The scan uses Chrome's Google sign-in and the read-only Gmail scope. You need to do this once:
+
+1. In Google Cloud Console, create a project, enable the **Gmail API**, and set up the OAuth consent screen.
+   Add the scope `https://www.googleapis.com/auth/gmail.readonly`.
+2. Load the unpacked extension (see above) and copy its **ID** from `chrome://extensions`.
+3. Create an OAuth client of type **Chrome Extension** using that ID. Copy its client ID.
+4. Replace `REPLACE_WITH_CHROME_OAUTH_CLIENT_ID` in `extension/manifest.json` with that client ID, then reload the extension.
+5. Add each tester's Google account as a **test user**. Until Google verifies the app, only test users can sign in.
+
+Google treats `gmail.readonly` as a restricted scope. Verification and a possible yearly security assessment are required
+before public release. Google's rule covers data that passes through a third-party server, and this design sends it only
+from the browser to Gmail, but confirm that with Google before launch.
+
 ## Guardrails (keep these true)
 
-- **No host access, no content scripts.** `extension/manifest.json` may ask only for `storage`.
-  `scripts/package-extension.mjs` fails the build if host access or content scripts are added.
-  Tests check this too.
+- **Minimal reach.** `extension/manifest.json` may ask only for `storage`, `identity`, `identity.email`, and host access to
+  `https://gmail.googleapis.com/*`, with the single `gmail.readonly` scope. There are no content scripts.
+  `scripts/package-extension.mjs` fails the build if this changes. Tests check it too.
+- **Read-only, narrow Gmail queries.** Only AI-service billing senders and billing words are searched. Only headers and the
+  snippet are requested. Message bodies and attachments are never requested.
 - **No automated clicks on third-party services.** Each step is a checklist item the customer completes.
   OpenAI's Terms of Use prohibit automated or programmatic extraction of data or output from its services,
   so ChatGPT steps are guided only.
-- **No credentials, no page reading.** The extension stores only the chosen billing channel, checklist
-  progress, and an optional end date, in `chrome.storage.local`.
+- **No credentials, no server.** Stored in `chrome.storage.local`: the billing channel, checklist progress, an optional
+  end date, and scan results. Nothing is sent to a Stopbill server.
 - **Claims stay within the product.** Copy must not promise refunds, guaranteed cancellation, or legal
   compliance. `src/lib/site.ts` is the single place for copy. `src/components/*` may only add layout.
 
@@ -57,7 +74,11 @@ Firefox is not supported yet. The extension is not in the Chrome Web Store.
 
 ## Known gaps
 
-- Only ChatGPT is supported. Only the web flow opens a page for the customer.
+- Scans read only the first 100 matching messages from the last 365 days, one Chrome-signed-in account at a time.
+  Lookups work only for accounts that have been scanned. Accounts need Chrome sign-in.
+- Apple subscriptions show up only when Apple sends the receipt to a scanned Gmail address.
+- Gmail scanning is limited to test users until Google verifies the app. Chrome is the supported browser.
+- Only ChatGPT is supported for cancellation. Only the web flow opens a page for the customer.
 - The end-date field is for the customer's own notes. Nothing checks it against the provider.
 - No reminder notifications.
 - The extension is not signed for the Chrome Web Store, so installs use Developer mode.

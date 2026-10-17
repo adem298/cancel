@@ -7,22 +7,32 @@ import {
   setEndDate,
   toggleStep,
 } from './lib/flows.js';
+import { getManyMetadata, listMessageIds } from './lib/gmail.js';
+import { buildQuery, classify, dedupeLatest, normalizeEmail, summarize } from './lib/subscriptions.js';
 
-const STORAGE_KEY = 'progress';
+const PROGRESS_KEY = 'progress';
+const MAILBOXES_KEY = 'mailboxes';
 
 const channelsEl = document.getElementById('channels');
 const flowEl = document.getElementById('flow');
 const resetBtn = document.getElementById('reset');
+const scanBtn = document.getElementById('scan');
+const scanStatus = document.getElementById('scan-status');
+const lookupForm = document.getElementById('lookup-form');
+const lookupInput = document.getElementById('lookup-email');
+const lookupResult = document.getElementById('lookup-result');
 
 let progress = emptyProgress();
+let mailboxes = {};
 
-async function load() {
-  const stored = await chrome.storage.local.get(STORAGE_KEY);
-  progress = stored[STORAGE_KEY] ?? emptyProgress();
+async function loadState() {
+  const stored = await chrome.storage.local.get([PROGRESS_KEY, MAILBOXES_KEY]);
+  progress = stored[PROGRESS_KEY] ?? emptyProgress();
+  mailboxes = stored[MAILBOXES_KEY] ?? {};
 }
 
-async function save() {
-  await chrome.storage.local.set({ [STORAGE_KEY]: progress });
+async function saveProgress() {
+  await chrome.storage.local.set({ [PROGRESS_KEY]: progress });
 }
 
 function el(tag, props = {}, children = []) {
@@ -41,13 +51,15 @@ function openTab(url) {
   chrome.tabs.create({ url });
 }
 
+/* ---------- Guided cancellation checklist ---------- */
+
 function renderChannels() {
   channelsEl.replaceChildren(
     ...CHANNELS.map((channel) => {
       const input = el('input', { type: 'radio', name: 'channel', value: channel.id, checked: progress.channel === channel.id });
       input.addEventListener('change', async () => {
         progress = emptyProgress(channel.id);
-        await save();
+        await saveProgress();
         render();
       });
       return el('label', { className: 'option' }, [input, el('span', { text: channel.label })]);
@@ -61,7 +73,7 @@ function renderSteps(flow) {
     const checkbox = el('input', { type: 'checkbox', checked: progress.done.includes(step.id) });
     checkbox.addEventListener('change', async () => {
       progress = toggleStep(progress, step.id);
-      await save();
+      await saveProgress();
       render();
     });
 
@@ -69,11 +81,7 @@ function renderSteps(flow) {
     if (step.open) {
       content.push(
         el('div', {}, [
-          el('button', {
-            type: 'button',
-            text: step.open.buttonLabel,
-            onclick: () => openTab(step.open.url),
-          }),
+          el('button', { type: 'button', text: step.open.buttonLabel, onclick: () => openTab(step.open.url) }),
         ]),
       );
     }
@@ -82,7 +90,7 @@ function renderSteps(flow) {
       date.addEventListener('change', async () => {
         try {
           progress = setEndDate(progress, date.value);
-          await save();
+          await saveProgress();
         } catch {
           date.value = progress.endDate;
         }
@@ -135,6 +143,103 @@ function renderFlow() {
   return el('div', {}, children);
 }
 
+/* ---------- Gmail scan and lookup by email ---------- */
+
+const callChrome = (fn, ...args) =>
+  new Promise((resolve, reject) => {
+    fn(...args, (result) => {
+      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+      else resolve(result);
+    });
+  });
+
+function setScanStatus(text, tone = '') {
+  scanStatus.textContent = text;
+  scanStatus.className = `status ${tone}`.trim();
+}
+
+function formatDate(iso) {
+  if (!iso) return 'date unknown';
+  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+async function scanMailbox() {
+  scanBtn.disabled = true;
+  setScanStatus('Scanning… this can take a minute.');
+  try {
+    const info = await callChrome(chrome.identity.getProfileUserInfo, { accountStatus: 'ANY' });
+    const email = normalizeEmail(info?.email);
+    if (!email) {
+      setScanStatus('Sign in to Chrome with the Google account you want to scan, then scan again.', 'warn');
+      return;
+    }
+
+    const token = await callChrome(chrome.identity.getAuthToken, { interactive: true });
+    let ids;
+    try {
+      ids = await listMessageIds(token, buildQuery(365));
+    } catch (err) {
+      if (err.status === 401) await callChrome(chrome.identity.removeCachedAuthToken, { token });
+      throw err;
+    }
+    const messages = ids.length ? await getManyMetadata(token, ids) : [];
+    const records = messages.map(summarize).map(classify).filter(Boolean);
+
+    mailboxes = {
+      ...mailboxes,
+      [email]: { scannedAt: new Date().toISOString(), scanned: ids.length, subscriptions: dedupeLatest(records) },
+    };
+    await chrome.storage.local.set({ [MAILBOXES_KEY]: mailboxes });
+
+    const found = mailboxes[email].subscriptions.length;
+    setScanStatus(`Scanned ${ids.length} receipts for ${email}. Found ${found} AI subscription${found === 1 ? '' : 's'}.`);
+    lookupInput.value = email;
+    renderLookup();
+  } catch (err) {
+    setScanStatus(err.message || 'Scan failed. Check that the extension OAuth client is set up.', 'warn');
+  } finally {
+    scanBtn.disabled = false;
+  }
+}
+
+function renderLookup() {
+  const typed = lookupInput.value.trim();
+  if (!typed) {
+    lookupResult.replaceChildren();
+    return;
+  }
+  const email = normalizeEmail(typed);
+  if (!email) {
+    lookupResult.replaceChildren(el('p', { className: 'warn', text: 'Enter a valid email address.' }));
+    return;
+  }
+  const mailbox = mailboxes[email];
+  if (!mailbox) {
+    lookupResult.replaceChildren(
+      el('p', { className: 'muted', text: `No scan for ${email} yet. Sign in to Chrome as that account and click Scan.` }),
+    );
+    return;
+  }
+  if (mailbox.subscriptions.length === 0) {
+    lookupResult.replaceChildren(
+      el('p', { className: 'muted', text: `No AI-service receipts found for ${email} in the last year (scanned ${formatDate(mailbox.scannedAt)}).` }),
+    );
+    return;
+  }
+  lookupResult.replaceChildren(
+    el('ul', { className: 'subs-list' }, mailbox.subscriptions.map((sub) =>
+      el('li', {}, [
+        el('div', { text: `${sub.serviceName} · ${sub.channel === 'apple' ? 'Apple billing' : 'web billing'}` }),
+        el('div', { className: 'meta', text: `Last receipt ${formatDate(sub.date)}` }),
+        el('div', { className: 'meta', text: sub.subject || '(no subject)' }),
+      ]),
+    )),
+    el('p', { className: 'muted', text: 'Apple receipts appear only when Apple sends them to this Gmail address.' }),
+  );
+}
+
+/* ---------- Wiring ---------- */
+
 function render() {
   renderChannels();
   flowEl.replaceChildren(renderFlow());
@@ -142,9 +247,16 @@ function render() {
 
 resetBtn.addEventListener('click', async () => {
   progress = emptyProgress();
-  await save();
+  await saveProgress();
   render();
 });
 
-await load();
+scanBtn.addEventListener('click', scanMailbox);
+lookupForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  renderLookup();
+});
+
+await loadState();
 render();
+renderLookup();

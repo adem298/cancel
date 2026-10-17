@@ -25,8 +25,9 @@ for (const file of listFiles(source).sort()) {
 
 // Fail the build if the manifest asks for more than the extension needs.
 const manifest = JSON.parse(readFileSync(join(source, 'manifest.json'), 'utf8'));
-if (manifest.host_permissions || manifest.content_scripts) {
-  throw new Error('manifest.json must not request host access or content scripts. See README.');
+const allowedHosts = ['https://gmail.googleapis.com/*'];
+if (JSON.stringify(manifest.host_permissions) !== JSON.stringify(allowedHosts) || manifest.content_scripts) {
+  throw new Error('manifest.json may only reach the Gmail API and must not add content scripts. See README.');
 }
 
 const out = join(root, 'public', 'downloads');

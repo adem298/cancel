@@ -48,7 +48,7 @@ export function Hero() {
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
             {BRAND.name} is a free browser extension with a guided checklist. It shows the exact steps for where you pay,
-            opens ChatGPT when you ask, and tracks your progress. You click every step yourself.
+            opens ChatGPT when you ask, and tracks your progress. It can also find your AI billing receipts in Gmail, read-only. You click every step yourself.
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <a href="#install" className="btn-primary">

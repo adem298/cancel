@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 // The copy is the product's promise. These checks stop claims we cannot support from creeping back in.
-const copy = ['src/lib/site.ts', 'src/components/Hero.tsx', 'src/components/Install.tsx', 'src/components/Limits.tsx']
+const copy = ['src/lib/site.ts', 'src/components/Hero.tsx', 'src/components/Install.tsx', 'src/components/Limits.tsx', 'src/components/FAQ.tsx']
   .map((f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8'))
   .join('\n');
 

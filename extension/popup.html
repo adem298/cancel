@@ -14,7 +14,7 @@
 
     <main>
       <section aria-labelledby="service-title">
-        <h2 id="service-title">Service: ChatGPT</h2>
+        <h2 id="service-title">Cancel ChatGPT</h2>
         <fieldset>
           <legend>Where do you pay for ChatGPT?</legend>
           <div id="channels"></div>
@@ -22,10 +22,26 @@
       </section>
 
       <section id="flow" aria-live="polite"></section>
+
+      <section aria-labelledby="subs-title" class="subs">
+        <h2 id="subs-title">AI subscriptions by email</h2>
+        <p class="muted">Scan reads only the headers and short previews of AI billing receipts, in this browser.</p>
+        <button type="button" id="scan" class="wide">Scan my Gmail for AI receipts</button>
+        <p id="scan-status" class="status" role="status"></p>
+
+        <form id="lookup-form" class="lookup">
+          <label for="lookup-email" class="muted">Email or Apple ID</label>
+          <div class="row">
+            <input id="lookup-email" type="email" autocomplete="off" placeholder="you@example.com" required />
+            <button type="submit">Show</button>
+          </div>
+        </form>
+        <div id="lookup-result" aria-live="polite"></div>
+      </section>
     </main>
 
     <footer class="foot">
-      <p class="muted">Stopbill saves your checklist in this browser only. It does not read pages, store passwords, or send data anywhere.</p>
+      <p class="muted">Stopbill saves checklist progress and scan results in this browser only. Nothing is sent to a Stopbill server.</p>
       <button type="button" id="reset" class="link">Start over</button>
     </footer>
 

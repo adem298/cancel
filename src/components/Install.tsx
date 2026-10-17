@@ -15,13 +15,13 @@ export function Install() {
       id="install"
       eyebrow="Install"
       title="Add it to Chrome or Edge."
-      description="Early access. The extension is not yet in the Chrome Web Store, so install it from the zip."
+      description="Early access. The extension is not yet in the Chrome Web Store, so install it from the zip. Gmail scanning works in Chrome and needs Google approval for each account during early access."
     >
       <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="panel flex flex-col justify-between p-6">
           <div>
             <h3 className="text-base font-semibold text-ink">Stopbill for Chromium browsers</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted">Version 0.2.0 · Free · No account</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">Version 0.3.0 · Free · No Stopbill account</p>
           </div>
           <a href={BRAND.extensionZip} className="btn-primary mt-8 w-full sm:w-auto">
             <Download className="size-4" aria-hidden="true" />
