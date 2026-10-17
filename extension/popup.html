@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stopbill</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="top">
+      <span class="brand">Stopbill</span>
+      <span id="badge" class="badge" hidden></span>
+    </header>
+
+    <main>
+      <section id="activate" hidden>
+        <h1>Activate your license</h1>
+        <p class="muted">Paste the license key from your purchase confirmation.</p>
+        <form id="activate-form" autocomplete="off">
+          <label for="key">License key</label>
+          <input id="key" name="key" spellcheck="false" placeholder="SB-XXXX-XXXX-XXXX" required />
+          <button type="submit" id="activate-btn">Activate this device</button>
+        </form>
+      </section>
+
+      <section id="active" hidden>
+        <p id="status" class="muted"></p>
+
+        <h2>Cancel a subscription</h2>
+        <div id="adapters" class="stack"></div>
+
+        <div id="flow" class="card" hidden>
+          <p id="step-label"></p>
+          <button type="button" id="run-step">Run this step</button>
+          <button type="button" id="exit-flow" class="link">Stop</button>
+          <p class="hint">Each step runs only when you click it. Nothing happens in the background.</p>
+        </div>
+
+        <button type="button" id="sign-out" class="link">Sign out on this device</button>
+      </section>
+
+      <p id="message" role="status"></p>
+    </main>
+
+    <script src="config.js"></script>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

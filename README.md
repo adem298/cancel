@@ -92,3 +92,69 @@ Attributes: `data-token` (required), `data-label`, `data-mount`, `data-api`, `da
 
 Environment variables: `VITE_API_MODE` (`demo` by default, or `live`) and
 `VITE_API_BASE_URL` (empty means same origin).
+
+## Extension and backend
+
+Cancelling is free. Customers pay a one-time fee for the **Stopbill browser extension**, which
+they install on their laptop. The purchase flow uses Stripe Checkout. Each license works on up to
+two devices.
+
+| Path | What it does |
+| --- | --- |
+| `/extension` | Purchase page (starts Stripe Checkout) and download link |
+| `/extension/success` | Shows the license key once after payment |
+| `/api/checkout` | Creates the Checkout session for the extension price |
+| `/api/stripe-webhook` | Verifies the Stripe signature and records paid purchases (idempotent) |
+| `/api/license/claim` | Issues the key for a paid session, once |
+| `/api/license/activate` | Registers a device and returns a 30-day device token |
+| `/api/license/status` | Confirms the device token and license are still active |
+
+Code: `api/` (Vercel functions), `server/lib/` (logic), `db/schema.sql` (Postgres),
+`extension/` (MV3 extension source), `scripts/package-extension.mjs` (builds the zip).
+
+### How cancellation works in the extension
+
+Automated steps run only when the customer clicks each one, and only on the hosts listed in an
+adapter. `extension/adapters.js` ships **empty**. Add a service only after its terms of service
+have been reviewed, and get legal review before you enable automated steps for any third-party
+service. Read the notes below before enabling any service.
+
+### Deploy checklist
+
+1. **Database (Neon):** create a project and copy the connection string into `DATABASE_URL`.
+   Apply the schema: `DATABASE_URL=... npm run db:migrate` (safe to re-run).
+2. **Stripe:** create a one-time Price for the extension and copy its ID into `EXTENSION_PRICE_ID`.
+   Create a restricted key with Checkout Sessions read and write access (`STRIPE_SECRET_KEY`).
+   Add a webhook endpoint at `https://YOUR-DOMAIN/api/stripe-webhook` for
+   `checkout.session.completed` and copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+3. **Secrets:** set `LICENSE_TOKEN_SECRET` to 32 or more random characters (for example
+   `openssl rand -base64 48`).
+4. **Vercel:** import the repository and set every variable from `.env.example`. Set
+   `EXTENSION_API_BASE` to the public origin. The packaged extension only talks to that origin.
+5. **Verify:** complete a test purchase with Stripe's test card `4242 4242 4242 4242`. Confirm the
+   key appears on `/extension/success`, then activate it in the extension. Check that a second
+   activation on a third device is refused.
+
+### Local development with the API
+
+`npm run dev` serves the site, but Vite does not run `/api` routes. To test purchase and
+activation locally, use the Vercel CLI: `npx vercel dev`, with a `.env.local` file that
+contains the variables above (pointing at a test database and Stripe test keys).
+
+### Known gaps before launch
+
+- **Owner-side API is not built.** The dashboard and widget still run in demo mode
+  (`VITE_API_MODE=demo`). The HTTP client exists, but the real endpoints and Stripe read-back
+  for businesses are not implemented.
+- **Webhook raw body:** the webhook sets `bodyParser: false`. Confirm the signature check passes on
+  Vercel with a Stripe test event before going live.
+- **Email:** license keys are shown on the success page only. Nothing is emailed yet.
+- **No device management UI** and no key reset. Support must free a device manually.
+- **No rate limiting** on activation yet. Keys have 60 bits of entropy, but add rate limiting
+  at the edge before launch.
+- **Not tested against live services:** Stripe, Neon, and Vercel could not be reached from the
+  build sandbox. Database logic was tested against a real local Postgres (`TEST_DATABASE_URL`).
+- **Pricing:** the marketing page still shows the original subscription tiers. Update it to
+  match the free-service and one-time-extension model.
+- **Legal:** automated cancellation on third-party services carries terms-of-service and
+  consumer-protection risk. Get legal review before enabling any adapter.

@@ -5,6 +5,9 @@ node_modules/
 dist/
 # generated widget bundle (run `npm run build:widget`)
 public/widget/
+# packaged extension (run `npm run package:extension`)
+public/downloads/
+.vercel/
 *.tsbuildinfo
 
 # logs & local env
