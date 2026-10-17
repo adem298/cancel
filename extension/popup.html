@@ -1,48 +1,34 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stopbill</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <header class="top">
-      <span class="brand">Stopbill</span>
-      <span id="badge" class="badge" hidden></span>
+      <h1>Stopbill</h1>
+      <p class="muted">Free. Not affiliated with OpenAI.</p>
     </header>
 
     <main>
-      <section id="activate" hidden>
-        <h1>Activate your license</h1>
-        <p class="muted">Paste the license key from your purchase confirmation.</p>
-        <form id="activate-form" autocomplete="off">
-          <label for="key">License key</label>
-          <input id="key" name="key" spellcheck="false" placeholder="SB-XXXX-XXXX-XXXX" required />
-          <button type="submit" id="activate-btn">Activate this device</button>
-        </form>
+      <section aria-labelledby="service-title">
+        <h2 id="service-title">Service: ChatGPT</h2>
+        <fieldset>
+          <legend>Where do you pay for ChatGPT?</legend>
+          <div id="channels"></div>
+        </fieldset>
       </section>
 
-      <section id="active" hidden>
-        <p id="status" class="muted"></p>
-
-        <h2>Cancel a subscription</h2>
-        <div id="adapters" class="stack"></div>
-
-        <div id="flow" class="card" hidden>
-          <p id="step-label"></p>
-          <button type="button" id="run-step">Run this step</button>
-          <button type="button" id="exit-flow" class="link">Stop</button>
-          <p class="hint">Each step runs only when you click it. Nothing happens in the background.</p>
-        </div>
-
-        <button type="button" id="sign-out" class="link">Sign out on this device</button>
-      </section>
-
-      <p id="message" role="status"></p>
+      <section id="flow" aria-live="polite"></section>
     </main>
 
-    <script src="config.js"></script>
+    <footer class="foot">
+      <p class="muted">Stopbill saves your checklist in this browser only. It does not read pages, store passwords, or send data anywhere.</p>
+      <button type="button" id="reset" class="link">Start over</button>
+    </footer>
+
     <script type="module" src="popup.js"></script>
   </body>
 </html>

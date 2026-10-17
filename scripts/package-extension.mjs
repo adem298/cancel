@@ -1,30 +1,35 @@
-// Builds public/downloads/stopbill-extension.zip. The API origin is baked into the
-// manifest's host permissions and into config.js, so the extension can only talk to that origin.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+// Builds public/downloads/stopbill-extension.zip from the extension/ folder.
+// The extension has no build step and no API origin: it only stores data in the browser.
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strToU8, zipSync } from 'fflate';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const apiBase = (process.env.EXTENSION_API_BASE ?? 'https://stopbill.dev').replace(/\/+$/, '');
-const origin = new URL(apiBase).origin; // throws on a malformed value
+const source = join(root, 'extension');
 
-const read = (file) => new Uint8Array(readFileSync(join(root, 'extension', file)));
+function listFiles(dir) {
+  return readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    return statSync(full).isDirectory() ? listFiles(full) : [full];
+  });
+}
 
-const manifest = JSON.parse(readFileSync(join(root, 'extension', 'manifest.json'), 'utf8'));
-manifest.host_permissions = [`${origin}/*`];
+const files = {};
+for (const file of listFiles(source).sort()) {
+  const name = relative(source, file).split('\\').join('/');
+  files[name] = name.endsWith('.json') || name.endsWith('.js') || name.endsWith('.html') || name.endsWith('.css')
+    ? strToU8(readFileSync(file, 'utf8').replace(/\r\n/g, '\n'))
+    : new Uint8Array(readFileSync(file));
+}
 
-const files = {
-  'manifest.json': strToU8(`${JSON.stringify(manifest, null, 2)}\n`),
-  'config.js': strToU8(`window.STOPBILL_CONFIG = ${JSON.stringify({ apiBase })};\n`),
-  'popup.html': read('popup.html'),
-  'popup.css': read('popup.css'),
-  'popup.js': read('popup.js'),
-  'adapters.js': read('adapters.js'),
-  'content.js': read('content.js'),
-};
+// Fail the build if the manifest asks for more than the extension needs.
+const manifest = JSON.parse(readFileSync(join(source, 'manifest.json'), 'utf8'));
+if (manifest.host_permissions || manifest.content_scripts) {
+  throw new Error('manifest.json must not request host access or content scripts. See README.');
+}
 
 const out = join(root, 'public', 'downloads');
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'stopbill-extension.zip'), zipSync(files, { level: 9 }));
-console.log(`Packaged the extension for ${origin}.`);
+console.log(`Packaged ${Object.keys(files).length} extension files.`);

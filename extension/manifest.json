@@ -1,12 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Stopbill",
-  "version": "1.0.0",
-  "description": "Guided cancellation for subscriptions you choose to cancel. You confirm every step.",
+  "version": "0.2.0",
+  "description": "Free guided cancellation for ChatGPT. You click every step yourself.",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Stopbill"
   },
-  "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["https://stopbill.dev/*"]
+  "permissions": ["storage"]
 }

@@ -1,182 +1,150 @@
-import { ADAPTERS } from './adapters.js';
+import {
+  CHANNELS,
+  emptyProgress,
+  flowFor,
+  isComplete,
+  nextStepIndex,
+  setEndDate,
+  toggleStep,
+} from './lib/flows.js';
 
-const { apiBase } = window.STOPBILL_CONFIG;
-const $ = (id) => document.getElementById(id);
-const DEVICE_KEY = 'deviceId';
-const SESSION_KEYS = ['token', 'expiresAt', 'deviceId'];
+const STORAGE_KEY = 'progress';
 
-let flow = null; // { adapter, index, tabId }
+const channelsEl = document.getElementById('channels');
+const flowEl = document.getElementById('flow');
+const resetBtn = document.getElementById('reset');
 
-function say(text, tone = 'info') {
-  const el = $('message');
-  el.textContent = text;
-  el.dataset.tone = tone;
+let progress = emptyProgress();
+
+async function load() {
+  const stored = await chrome.storage.local.get(STORAGE_KEY);
+  progress = stored[STORAGE_KEY] ?? emptyProgress();
 }
 
-function showOnly(id) {
-  for (const section of ['activate', 'active']) $(section).hidden = section !== id;
+async function save() {
+  await chrome.storage.local.set({ [STORAGE_KEY]: progress });
 }
 
-async function errorText(res) {
-  try {
-    const body = await res.json();
-    return body.error || `Request failed (${res.status}).`;
-  } catch {
-    return `Request failed (${res.status}).`;
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key === 'text') node.textContent = value;
+    else if (key === 'className') node.className = value;
+    else if (key.includes('-')) node.setAttribute(key, value);
+    else node[key] = value;
   }
+  for (const child of children) node.append(child);
+  return node;
 }
 
-async function loadStored() {
-  return chrome.storage.local.get(SESSION_KEYS);
+function openTab(url) {
+  chrome.tabs.create({ url });
 }
 
-async function init() {
-  const saved = await loadStored();
-  if (saved.token && saved.expiresAt && Date.parse(saved.expiresAt) > Date.now()) {
-    await refreshStatus(saved.token);
-  } else {
-    showActivate();
-  }
+function renderChannels() {
+  channelsEl.replaceChildren(
+    ...CHANNELS.map((channel) => {
+      const input = el('input', { type: 'radio', name: 'channel', value: channel.id, checked: progress.channel === channel.id });
+      input.addEventListener('change', async () => {
+        progress = emptyProgress(channel.id);
+        await save();
+        render();
+      });
+      return el('label', { className: 'option' }, [input, el('span', { text: channel.label })]);
+    }),
+  );
 }
 
-function showActivate() {
-  showOnly('activate');
-  $('badge').hidden = true;
-}
-
-async function refreshStatus(token) {
-  let res;
-  try {
-    res = await fetch(`${apiBase}/api/license/status`, { headers: { authorization: `Bearer ${token}` } });
-  } catch {
-    say('Could not reach Stopbill. Check your connection and try again.', 'error');
-    showOnly('active');
-    return;
-  }
-  if (!res.ok) {
-    await chrome.storage.local.remove(['token', 'expiresAt']);
-    showActivate();
-    say(await errorText(res), 'error');
-    return;
-  }
-  const status = await res.json();
-  $('status').textContent = `Active on ${status.devicesUsed} of ${status.maxDevices} devices.`;
-  $('badge').textContent = 'Licensed';
-  $('badge').hidden = false;
-  showOnly('active');
-  renderAdapters();
-}
-
-$('activate-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const button = $('activate-btn');
-  button.disabled = true;
-  say('Activating…');
-  try {
-    const saved = await loadStored();
-    const deviceId = saved[DEVICE_KEY] ?? crypto.randomUUID();
-    const res = await fetch(`${apiBase}/api/license/activate`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ licenseKey: $('key').value, deviceId }),
+function renderSteps(flow) {
+  const current = nextStepIndex(flow, progress);
+  const items = flow.steps.map((step, index) => {
+    const checkbox = el('input', { type: 'checkbox', checked: progress.done.includes(step.id) });
+    checkbox.addEventListener('change', async () => {
+      progress = toggleStep(progress, step.id);
+      await save();
+      render();
     });
-    if (!res.ok) {
-      say(await errorText(res), 'error');
-      return;
+
+    const content = [el('span', { text: step.label })];
+    if (step.open) {
+      content.push(
+        el('div', {}, [
+          el('button', {
+            type: 'button',
+            text: step.open.buttonLabel,
+            onclick: () => openTab(step.open.url),
+          }),
+        ]),
+      );
     }
-    const body = await res.json();
-    await chrome.storage.local.set({ token: body.token, expiresAt: body.expiresAt, deviceId });
-    $('key').value = '';
-    say('Activated.', 'success');
-    await refreshStatus(body.token);
-  } catch {
-    say('Could not reach Stopbill. Check your connection and try again.', 'error');
-  } finally {
-    button.disabled = false;
-  }
-});
-
-$('sign-out').addEventListener('click', async () => {
-  await chrome.storage.local.remove(['token', 'expiresAt']);
-  say('Signed out on this device.');
-  showActivate();
-});
-
-function renderAdapters() {
-  const root = $('adapters');
-  root.replaceChildren();
-  if (ADAPTERS.length === 0) {
-    const note = document.createElement('p');
-    note.className = 'muted';
-    note.textContent = 'No services are enabled yet. A service is added only after its terms have been reviewed.';
-    root.append(note);
-    return;
-  }
-  for (const adapter of ADAPTERS) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = adapter.name;
-    button.addEventListener('click', () => startFlow(adapter));
-    root.append(button);
-  }
-}
-
-async function startFlow(adapter) {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const host = tab?.url ? new URL(tab.url).hostname : '';
-  if (!adapter.hosts.includes(host)) {
-    say(`Open ${adapter.hosts[0]} in this tab first.`, 'error');
-    return;
-  }
-  flow = { adapter, index: 0, tabId: tab.id };
-  renderStep();
-}
-
-function renderStep() {
-  if (!flow) return;
-  const { adapter, index } = flow;
-  const step = adapter.steps[index];
-  if (!step) {
-    say('All steps are done. Check the service to confirm the cancellation.', 'success');
-    stopFlow();
-    return;
-  }
-  $('flow').hidden = false;
-  $('step-label').textContent = `Step ${index + 1} of ${adapter.steps.length}: ${step.label}`;
-  $('run-step').onclick = () => runStep(step);
-}
-
-function stopFlow() {
-  flow = null;
-  $('flow').hidden = true;
-}
-
-$('exit-flow').addEventListener('click', () => {
-  stopFlow();
-  say('Stopped. Nothing else was changed.');
-});
-
-async function runStep(step) {
-  if (!flow) return;
-  const { tabId } = flow;
-  try {
-    if (step.url) {
-      await chrome.tabs.update(tabId, { url: step.url });
-    } else {
-      // activeTab grants access to this tab after the customer's click. Only the approved selector runs.
-      await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
-      const result = await chrome.tabs.sendMessage(tabId, { type: 'stopbill:click', selector: step.selector });
-      if (!result?.ok) {
-        say(result?.error ?? 'This step did not run. Do it manually, then continue.', 'error');
-        return;
-      }
+    if (step.endDate) {
+      const date = el('input', { type: 'date', value: progress.endDate, 'aria-label': 'Access end date' });
+      date.addEventListener('change', async () => {
+        try {
+          progress = setEndDate(progress, date.value);
+          await save();
+        } catch {
+          date.value = progress.endDate;
+        }
+        render();
+      });
+      content.push(date);
     }
-    flow.index += 1;
-    say('Step done.', 'success');
-    renderStep();
-  } catch {
-    say('This step did not run. Check the page, then try again.', 'error');
-  }
+
+    const label = el('label', {}, [checkbox, el('div', {}, content)]);
+    return el('li', { className: index === current ? 'current' : '' }, [
+      el('span', { className: 'badge', text: index === current ? 'Next' : `Step ${index + 1}` }),
+      label,
+    ]);
+  });
+  return el('ol', { className: 'steps' }, items);
 }
 
-init();
+function renderFlow() {
+  const flow = flowFor(progress.channel);
+  if (!progress.channel) {
+    return el('p', { className: 'muted', text: 'Choose where you pay, and Stopbill will show the steps.' });
+  }
+  if (progress.channel === 'unsure') {
+    return el('div', { className: 'unsure' }, [
+      el('p', { text: 'Check your bank or card statement. The charge is labelled:' }),
+      el('ul', { className: 'notes' }, [
+        el('li', { text: '“OpenAI” or “chatgpt.com”: cancel on the web (choose the web option).' }),
+        el('li', { text: '“Apple”: cancel in iPhone or iPad Settings.' }),
+        el('li', { text: '“Google”: cancel in Google Play.' }),
+      ]),
+    ]);
+  }
+  if (!flow) return el('p', { className: 'muted', text: 'No steps for this option yet.' });
+
+  const children = [el('h3', { text: flow.title }), renderSteps(flow)];
+  if (isComplete(flow, progress)) {
+    children.push(
+      el('div', { className: 'done' }, [
+        el('p', { text: 'All steps are checked.' }),
+        el('p', { className: 'muted', text: 'Reload your billing page once to confirm the cancellation appears before you rely on it.' }),
+      ]),
+    );
+  }
+  children.push(
+    el('ul', { className: 'notes' }, flow.notes.map((note) => el('li', { text: note }))),
+    el('p', { className: 'muted' }, [
+      el('button', { type: 'button', className: 'link', text: 'OpenAI help article', onclick: () => openTab(flow.helpUrl) }),
+    ]),
+  );
+  return el('div', {}, children);
+}
+
+function render() {
+  renderChannels();
+  flowEl.replaceChildren(renderFlow());
+}
+
+resetBtn.addEventListener('click', async () => {
+  progress = emptyProgress();
+  await save();
+  render();
+});
+
+await load();
+render();

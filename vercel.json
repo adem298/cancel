@@ -3,9 +3,5 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm ci",
-  "rewrites": [
-    { "source": "/app/:path*", "destination": "/index.html" },
-    { "source": "/extension/:path*", "destination": "/index.html" }
-  ]
+  "installCommand": "npm ci"
 }

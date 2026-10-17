@@ -2,16 +2,14 @@
   "name": "stopbill-site",
   "private": true,
   "version": "1.0.0",
-  "description": "Marketing site for Stopbill: cancellations that actually stop billing.",
+  "description": "Stopbill: free guided cancellation for ChatGPT, delivered as a browser extension, plus its marketing site.",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "predev": "npm run build:widget && npm run package:extension",
-    "build:widget": "vite build -c vite.widget.config.ts",
+    "predev": "npm run package:extension",
     "package:extension": "node scripts/package-extension.mjs",
-    "prebuild": "npm run build:widget && npm run package:extension",
+    "prebuild": "npm run package:extension",
     "build": "npm run typecheck && vite build",
-    "db:migrate": "node scripts/migrate.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 4173 --strictPort",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -19,20 +17,14 @@
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
-    "@tanstack/react-query": "^5.104.3",
     "fflate": "^0.8.3",
-    "jose": "^6.2.12",
     "lucide-react": "^0.511.0",
-    "pg": "^8.23.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router": "^7.18.4",
-    "stripe": "^23.0.0"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.5",
-    "@types/pg": "^8.23.1",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
     "@vitejs/plugin-react": "^6.1.2",

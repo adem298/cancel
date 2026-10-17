@@ -43,8 +43,8 @@ export function Nav() {
         </ul>
 
         <div className="flex items-center gap-2">
-          <a href="#audit" className="btn-primary hidden py-2 text-[0.8125rem] sm:inline-flex">
-            Request an audit
+          <a href="#install" className="btn-primary hidden py-2 text-[0.8125rem] sm:inline-flex">
+            Get the extension
           </a>
           <button
             type="button"
@@ -74,8 +74,8 @@ export function Nav() {
               </li>
             ))}
             <li className="pt-2 pb-3">
-              <a href="#audit" onClick={() => setOpen(false)} className="btn-primary w-full">
-                Request an audit
+              <a href="#install" onClick={() => setOpen(false)} className="btn-primary w-full">
+                Get the extension
               </a>
             </li>
           </ul>

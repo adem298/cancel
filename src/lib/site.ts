@@ -1,154 +1,96 @@
 /**
- * Site-wide configuration and copy.
- *
- * Everything customer-facing that is likely to change (brand name, contact
- * address, prices, FAQ) lives here so it can be reviewed in one place.
+ * Site-wide configuration and copy. Brand, contact, and claims live here so they can be
+ * reviewed in one place. Keep every claim here within what the extension actually does.
  */
 
 export const BRAND = {
   name: 'Stopbill',
-  tagline: 'Cancellations that actually stop billing.',
+  tagline: 'Cancel ChatGPT in a few guided steps.',
   domain: 'stopbill.dev',
   contactEmail: 'hello@stopbill.dev',
-  status: 'Now accepting early-access teams',
+  extensionZip: '/downloads/stopbill-extension.zip',
 } as const;
 
 export const NAV_LINKS = [
-  { href: '#problem', label: 'Why it matters' },
-  { href: '#demo', label: 'Live demo' },
-  { href: '#how-it-works', label: 'How it works' },
-  { href: '#security', label: 'Security' },
-  { href: '#pricing', label: 'Pricing' },
+  { href: '#channels', label: 'Billing channels' },
+  { href: '#steps', label: 'How it works' },
+  { href: '#limits', label: 'Limits' },
   { href: '#faq', label: 'FAQ' },
 ] as const;
 
-export type Plan = {
-  name: string;
-  price: number;
-  cadence: string;
-  description: string;
-  subscriptions: string;
-  features: readonly string[];
-  highlighted?: boolean;
-};
-
-export const PLANS: readonly Plan[] = [
+export const CHANNEL_CARDS = [
   {
-    name: 'Starter',
-    price: 29,
-    cadence: '/ month',
-    description: 'For early-stage SaaS products getting their first paying customers.',
-    subscriptions: 'Up to 500 active subscriptions',
-    features: [
-      'Embeddable cancel widget',
-      'Reason survey and save offers',
-      'Real cancellation via Stripe',
-      'Billing verification and owner alerts',
-      'Confirmation emails',
-      'Dashboard with core metrics',
-    ],
+    title: 'chatgpt.com (web)',
+    where: 'ChatGPT, then Settings, then Billing, then Cancel plan.',
+    note: 'Stopbill opens ChatGPT for you. You make the clicks.',
   },
   {
-    name: 'Growth',
-    price: 79,
-    cadence: '/ month',
-    description: 'For growing products that need reliable retention metrics and full audit history.',
-    subscriptions: 'Up to 2,500 active subscriptions',
-    features: [
-      'Everything in Starter',
-      'Full audit log export',
-      'Recovered revenue reporting',
-      'Brand-matched widget theme',
-      'Webhook monitoring and retries',
-      'Priority support',
-    ],
-    highlighted: true,
+    title: 'iPhone or iPad app',
+    where: 'Settings, your name, Subscriptions, ChatGPT, Cancel Subscription.',
+    note: 'Deleting the app does not cancel an Apple subscription.',
   },
   {
-    name: 'Scale',
-    price: 199,
-    cadence: '/ month',
-    description: 'For high-volume subscription businesses with several teams and products.',
-    subscriptions: 'Up to 10,000 active subscriptions',
-    features: [
-      'Everything in Growth',
-      'Multiple products and domains',
-      'Hosted cancel page on your subdomain',
-      'Team access and roles',
-      'Dedicated onboarding call',
-    ],
+    title: 'Android app',
+    where: 'Google Play, Menu, Subscriptions, ChatGPT, Cancel subscription.',
+    note: 'Use the same Google account you paid with.',
   },
 ] as const;
 
-export const SETUP_SERVICE = {
-  name: 'Done-for-you setup',
-  price: 500,
-  monthly: 29,
-  description:
-    'We install, configure, and test the cancel flow with your Stripe account, then hand it over with a short walkthrough.',
-  includes: [
-    'Stripe connection with restricted, least-privilege access',
-    'Widget installed and styled to your brand colors',
-    'Save offers configured for your plans',
-    'End-to-end test cancellations in Stripe test mode',
-  ],
-} as const;
-
-export type FaqItem = { question: string; answer: string };
-
-export const FAQ: readonly FaqItem[] = [
-  {
-    question: 'Does Stopbill hold or process card details?',
-    answer:
-      'No. Card data stays with Stripe. Stopbill works with subscription objects and their IDs, so card numbers never reach our servers.',
-  },
-  {
-    question: 'What access do you need from Stripe?',
-    answer:
-      'Stripe Connect OAuth or a restricted API key with only the permissions the flow needs: read and update subscriptions, read customers and invoices, and manage coupons for save offers. We never ask for a full secret key.',
-  },
-  {
-    question: 'What happens if a cancellation fails in Stripe?',
-    answer:
-      'The customer sees a clear message and is not told they are cancelled. The owner is alerted, and the attempt is written to the audit log. Stopbill also compares its records against Stripe through webhooks and the API, so a mismatch is caught and flagged.',
-  },
-  {
-    question: 'How does the cancel flow know who is cancelling?',
-    answer:
-      'Your app passes a short-lived, signed token, such as a JWT, that identifies the customer and subscription. Stopbill never sees your customers’ passwords, and the token cannot be used to cancel a different subscription.',
-  },
-  {
-    question: 'Can customers cancel now or at the end of the billing period?',
-    answer:
-      'Both. The customer chooses. The screen shows the exact date their access ends and whether a final charge applies, before they confirm.',
-  },
-  {
-    question: 'Is this compliant with cancellation laws?',
-    answer:
-      'The flow is designed around easy-cancellation principles: a visible cancel button, a short flow, a “No thanks, cancel” option at every step, and an immediate confirmation. This is not legal advice. Requirements differ by market and change over time, so have your counsel review the flow for your markets.',
-  },
-  {
-    question: 'Do you support Paddle, Lemon Squeezy, or PayPal?',
-    answer:
-      'Not yet. Stopbill is Stripe-only at launch so we can make the billing checks reliable first. Paddle and Lemon Squeezy are on the roadmap.',
-  },
-  {
-    question: 'Does it replace the Stripe Customer Portal?',
-    answer:
-      'It can sit alongside it. The Customer Portal lets customers cancel. Stopbill adds the save step, the reason survey, the billing check that confirms the cancellation took effect, and the dashboard that shows what you are retaining.',
-  },
-  {
-    question: 'How do you handle my customers’ data?',
-    answer:
-      'Each business is isolated in its own data scope. Tokens and keys are encrypted at rest, every action is logged, and we process customer data on your behalf under a data processing agreement.',
-  },
+export const STEPS = [
+  { title: 'Pick where you pay', body: 'Choose web, Apple, or Google Play. Stopbill shows only the steps for that channel.' },
+  { title: 'Follow the checklist', body: 'Each step is a checkbox. Stopbill can open ChatGPT for the web steps.' },
+  { title: 'Click Cancel yourself', body: 'You select Cancel and confirm on the provider’s page. Stopbill never clicks for you.' },
+  { title: 'Note the end date', body: 'Write down when your paid access ends, and check the billing page once.' },
 ] as const;
 
-export const ROADMAP = [
-  { label: 'Stripe', status: 'Available', tone: 'live' },
-  { label: 'Paddle', status: 'Planned', tone: 'next' },
-  { label: 'Lemon Squeezy', status: 'Planned', tone: 'next' },
-  { label: 'Win-back emails', status: 'Planned', tone: 'next' },
-  { label: 'Offer A/B testing', status: 'Planned', tone: 'next' },
-  { label: 'Analytics and support integrations', status: 'Later', tone: 'later' },
+export const DOES = [
+  'Shows the steps for where you pay, and tracks your progress',
+  'Opens ChatGPT in a new tab when you ask it to',
+  'Shows the rule to cancel at least 24 hours before renewal',
+  'Keeps your checklist in this browser only',
+] as const;
+
+export const DOES_NOT = [
+  'Click, type, or sign in for you',
+  'Read your chats or the pages you visit (the extension has no page access)',
+  'Store your password or any card details',
+  'Send your data to a server. There is no Stopbill account or backend',
+  'Promise a refund or guarantee that a subscription is cancelled',
+] as const;
+
+export const FAQ = [
+  {
+    question: 'Is Stopbill free?',
+    answer: 'Yes. There is no payment in this version.',
+  },
+  {
+    question: 'Does Stopbill cancel my subscription for me?',
+    answer:
+      'No. You make every click. Stopbill shows where to click and keeps track of which steps you have finished.',
+  },
+  {
+    question: 'Why doesn’t Stopbill automate the ChatGPT steps?',
+    answer:
+      'OpenAI’s Terms of Use prohibit automated or programmatic extraction of data or output from its services. Stopbill therefore guides you instead of clicking for you.',
+  },
+  {
+    question: 'Which AI tools are supported?',
+    answer:
+      'ChatGPT only, for now. Other tools will be added after their terms of service have been reviewed.',
+  },
+  {
+    question: 'What data does the extension store?',
+    answer:
+      'Only your checklist progress, your billing channel, and an end date you enter. It is kept in your browser’s extension storage and is never sent anywhere.',
+  },
+  {
+    question: 'Will Stopbill get me a refund?',
+    answer:
+      'No. Stopbill cannot promise a refund. Refund decisions belong to the provider, so check their policy.',
+  },
+  {
+    question: 'Is this legal advice?',
+    answer:
+      'No. Stopbill is a tool, not legal advice. After cancelling, check your billing page to confirm the cancellation appears.',
+  },
 ] as const;

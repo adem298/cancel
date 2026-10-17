@@ -1,6 +1,0 @@
-/** Reads a required environment variable. Fails loudly so misconfiguration never reaches a customer. */
-export function env(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing environment variable ${name}`);
-  return value;
-}

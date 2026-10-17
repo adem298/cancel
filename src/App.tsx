@@ -1,16 +1,11 @@
-import { AuditCTA } from './components/AuditCTA';
-import { CancelFlowDemo } from './components/CancelFlowDemo';
-import { Dashboard } from './components/Dashboard';
+import { Channels } from './components/Channels';
 import { FAQ } from './components/FAQ';
-import { Features } from './components/Features';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
-import { HowItWorks } from './components/HowItWorks';
+import { Install } from './components/Install';
+import { Limits } from './components/Limits';
 import { Nav } from './components/Nav';
-import { Pricing } from './components/Pricing';
-import { Principles } from './components/Principles';
-import { Problem } from './components/Problem';
-import { Security } from './components/Security';
+import { Steps } from './components/Steps';
 
 export default function App() {
   return (
@@ -21,19 +16,15 @@ export default function App() {
       >
         Skip to content
       </a>
+      <div id="top" />
       <Nav />
       <main id="main" className="min-h-screen">
         <Hero />
-        <Problem />
-        <CancelFlowDemo />
-        <HowItWorks />
-        <Features />
-        <Dashboard />
-        <Principles />
-        <Security />
-        <Pricing />
+        <Channels />
+        <Steps />
+        <Limits />
+        <Install />
         <FAQ />
-        <AuditCTA />
       </main>
       <Footer />
     </>
