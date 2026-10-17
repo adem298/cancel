@@ -4,7 +4,7 @@ import { Section } from './Section';
 
 const INSTALL_STEPS = [
   'Download the extension zip and unzip it into a folder you will keep.',
-  'Open chrome://extensions in Chrome or Edge, then turn on Developer mode.',
+  'Open chrome://extensions (or edge://, brave://, opera://extensions), then turn on Developer mode.',
   'Choose Load unpacked and select the unzipped folder.',
   'Pin Stopbill from the extensions menu, then click it to start.',
 ];
@@ -14,14 +14,14 @@ export function Install() {
     <Section
       id="install"
       eyebrow="Install"
-      title="Add it to Chrome or Edge."
-      description="Early access. The extension is not yet in the Chrome Web Store, so install it from the zip. Gmail scanning works in Chrome and needs Google approval for each account during early access."
+      title="Add it to your Chromium browser."
+      description="Early access. Works in Chrome, Edge, Brave, and Opera. Install it from the zip. Gmail scanning needs Google approval for each account during early access."
     >
       <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="panel flex flex-col justify-between p-6">
           <div>
             <h3 className="text-base font-semibold text-ink">Stopbill for Chromium browsers</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted">Version 0.3.0 · Free · No Stopbill account</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">Version 0.4.0 · Free · No Stopbill account</p>
           </div>
           <a href={BRAND.extensionZip} className="btn-primary mt-8 w-full sm:w-auto">
             <Download className="size-4" aria-hidden="true" />

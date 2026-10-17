@@ -48,7 +48,7 @@ export const DOES = [
   'Opens ChatGPT in a new tab when you ask it to',
   'Shows the rule to cancel at least 24 hours before renewal',
   'When you click Scan, searches your Gmail (read-only) for ChatGPT, Claude, Gemini, and Perplexity billing receipts',
-  'Lists the AI subscriptions found for an email address you enter',
+  'Lists the AI subscriptions found for each scanned email address',
   'Keeps your checklist and scan results in this browser only',
 ] as const;
 
@@ -84,7 +84,7 @@ export const FAQ = [
   {
     question: 'Does it read my email?',
     answer:
-      'Only when you click Scan. It searches your Gmail for billing receipts from the AI services it knows, and reads the sender, subject, date, and a short preview of each match. It does not read other messages, and it can only scan the account you are signed into in Chrome.',
+      'Only when you click Scan. It searches your Gmail for billing receipts from the AI services it knows, and reads the sender, subject, date, and a short preview of each match. It does not read other messages. You choose which Google account to scan, and each one is kept separately.',
   },
   {
     question: 'Can it find Apple subscriptions?',

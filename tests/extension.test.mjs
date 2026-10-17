@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
@@ -13,17 +14,19 @@ import {
 
 const manifest = JSON.parse(readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
 
+// Chrome derives an unpacked extension ID from the SHA-256 of its public key: first 32 hex digits, mapped to a-p.
+function derivedId(base64Key) {
+  const hex = createHash('sha256').update(Buffer.from(base64Key, 'base64')).digest('hex').slice(0, 32);
+  return [...hex].map((c) => String.fromCharCode(97 + parseInt(c, 16))).join('');
+}
+
 describe('extension manifest (privacy guarantees)', () => {
-  it('asks only for storage, identity (to know which Chrome account is signed in), and that email', () => {
-    expect([...manifest.permissions].sort()).toEqual(['identity', 'identity.email', 'storage']);
+  it('asks only for storage and identity (for the Google sign-in window)', () => {
+    expect([...manifest.permissions].sort()).toEqual(['identity', 'storage']);
   });
 
   it('can reach only the Gmail API, never arbitrary sites', () => {
     expect(manifest.host_permissions).toEqual(['https://gmail.googleapis.com/*']);
-  });
-
-  it('requests only the read-only Gmail scope', () => {
-    expect(manifest.oauth2.scopes).toEqual(['https://www.googleapis.com/auth/gmail.readonly']);
   });
 
   it('has no content scripts and no background page, so it cannot read or click pages', () => {
@@ -34,6 +37,18 @@ describe('extension manifest (privacy guarantees)', () => {
   it('is Manifest V3 with a popup', () => {
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.action.default_popup).toBe('popup.html');
+  });
+
+  it('pins the extension ID with a key, so the Google redirect URI is the same in every Chromium browser', () => {
+    const id = derivedId(manifest.key);
+    expect(id).toBe('cpcgbbapickecmjkmnjggebigfebgkbj');
+  });
+});
+
+describe('Google sign-in config', () => {
+  it('does not ask for the Chrome-only identity email or a manifest OAuth client', () => {
+    expect(manifest.oauth2).toBeUndefined();
+    expect(manifest.permissions).not.toContain('identity.email');
   });
 });
 

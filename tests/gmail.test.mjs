@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GMAIL_API, GmailError, getManyMetadata, getMessageMetadata, listMessageIds } from '../extension/lib/gmail.js';
+import { GMAIL_API, GmailError, getManyMetadata, getMessageMetadata, getProfile, listMessageIds } from '../extension/lib/gmail.js';
 
 function fakeFetch(handler) {
   const calls = [];
@@ -52,5 +52,18 @@ describe('getManyMetadata', () => {
     const out = await getManyMetadata('tok', ids, { fetchFn: fn, concurrency: 10 });
     expect(out.map((m) => m.id)).toEqual(ids);
     expect(calls).toHaveLength(23);
+  });
+});
+
+describe('getProfile', () => {
+  it('returns the signed-in account address', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { emailAddress: 'me@gmail.com', messagesTotal: 4 } }));
+    expect(await getProfile('tok', { fetchFn: fn })).toBe('me@gmail.com');
+    expect(calls[0].url).toBe(`${GMAIL_API}/profile`);
+  });
+
+  it('returns null when the response has no address', async () => {
+    const { fn } = fakeFetch(() => ({ body: {} }));
+    expect(await getProfile('tok', { fetchFn: fn })).toBeNull();
   });
 });

@@ -7,11 +7,14 @@ import {
   setEndDate,
   toggleStep,
 } from './lib/flows.js';
-import { getManyMetadata, listMessageIds } from './lib/gmail.js';
+import { GOOGLE_CLIENT_ID } from './lib/config.js';
+import { buildAuthUrl, isFresh, newState, parseRedirect } from './lib/auth.js';
+import { GmailError, getManyMetadata, getProfile, listMessageIds } from './lib/gmail.js';
 import { buildQuery, classify, dedupeLatest, normalizeEmail, summarize } from './lib/subscriptions.js';
 
 const PROGRESS_KEY = 'progress';
 const MAILBOXES_KEY = 'mailboxes';
+const SESSION_KEY = 'gmailSession';
 
 const channelsEl = document.getElementById('channels');
 const flowEl = document.getElementById('flow');
@@ -143,7 +146,7 @@ function renderFlow() {
   return el('div', {}, children);
 }
 
-/* ---------- Gmail scan and lookup by email ---------- */
+/* ---------- Gmail sign-in, scan, and lookup by email ---------- */
 
 const callChrome = (fn, ...args) =>
   new Promise((resolve, reject) => {
@@ -163,23 +166,48 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+/** The Gmail token is kept in session storage: it is cleared when the browser closes. */
+async function loadSession() {
+  if (!chrome.storage.session) throw new Error('This browser is too old for Stopbill. Use Chrome, Edge, Brave, or Opera.');
+  const stored = await chrome.storage.session.get(SESSION_KEY);
+  return stored[SESSION_KEY] ?? null;
+}
+
+async function saveSession(session) {
+  await chrome.storage.session.set({ [SESSION_KEY]: session });
+}
+
+async function connectGmail() {
+  if (GOOGLE_CLIENT_ID.startsWith('REPLACE_')) {
+    throw new Error('Gmail scanning is not set up yet. Add the Google client ID (see README).');
+  }
+  const state = newState();
+  const url = buildAuthUrl({ clientId: GOOGLE_CLIENT_ID, redirectUri: chrome.identity.getRedirectURL(), state });
+  const redirected = await callChrome(chrome.identity.launchWebAuthFlow, { url, interactive: true });
+  const session = parseRedirect(redirected, state);
+  await saveSession(session);
+  return session;
+}
+
 async function scanMailbox() {
   scanBtn.disabled = true;
   setScanStatus('Scanning… this can take a minute.');
   try {
-    const info = await callChrome(chrome.identity.getProfileUserInfo, { accountStatus: 'ANY' });
-    const email = normalizeEmail(info?.email);
-    if (!email) {
-      setScanStatus('Sign in to Chrome with the Google account you want to scan, then scan again.', 'warn');
-      return;
+    let session = await loadSession();
+    if (!isFresh(session)) {
+      setScanStatus('Opening Google sign-in…');
+      session = await connectGmail();
     }
+    const token = session.accessToken;
 
-    const token = await callChrome(chrome.identity.getAuthToken, { interactive: true });
+    let email;
     let ids;
     try {
+      email = normalizeEmail(await getProfile(token));
+      if (!email) throw new Error('Google did not return an email address for this account.');
       ids = await listMessageIds(token, buildQuery(365));
     } catch (err) {
-      if (err.status === 401) await callChrome(chrome.identity.removeCachedAuthToken, { token });
+      if (err instanceof GmailError && err.status === 401) await chrome.storage.session.remove(SESSION_KEY);
       throw err;
     }
     const messages = ids.length ? await getManyMetadata(token, ids) : [];
@@ -196,7 +224,7 @@ async function scanMailbox() {
     lookupInput.value = email;
     renderLookup();
   } catch (err) {
-    setScanStatus(err.message || 'Scan failed. Check that the extension OAuth client is set up.', 'warn');
+    setScanStatus(err.message || 'Scan failed. Try again.', 'warn');
   } finally {
     scanBtn.disabled = false;
   }
@@ -216,7 +244,7 @@ function renderLookup() {
   const mailbox = mailboxes[email];
   if (!mailbox) {
     lookupResult.replaceChildren(
-      el('p', { className: 'muted', text: `No scan for ${email} yet. Sign in to Chrome as that account and click Scan.` }),
+      el('p', { className: 'muted', text: `No scan for ${email} yet. Click Scan and choose that Google account.` }),
     );
     return;
   }

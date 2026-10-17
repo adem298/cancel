@@ -46,3 +46,9 @@ export async function getManyMetadata(token, ids, { fetchFn = fetch, concurrency
   }
   return out;
 }
+
+/** The email address of the account that the token belongs to. */
+export async function getProfile(token, { fetchFn = fetch } = {}) {
+  const data = await getJson(`${GMAIL_API}/profile`, token, fetchFn);
+  return typeof data.emailAddress === 'string' ? data.emailAddress : null;
+}
