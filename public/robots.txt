@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://adem298.github.io/cancel/sitemap.xml

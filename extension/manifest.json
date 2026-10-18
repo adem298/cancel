@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Stopbill",
+  "version": "0.4.0",
+  "description": "Free guided ChatGPT cancellation, plus a read-only scan of AI billing receipts in Gmail.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApOK4BhoBpRn7mfpeQM/rcMsHXHJk31ZoToWkkm5F4pW7iIcVkr5syoAg1xR2w9+KlpOWA+Re1H62EYCYB7YeQdq8ERWg1RK695XH7v/fP3ybWn6ybMZbYRaijSipXguBcWs7GQPhPocFPDh7WrJdi7xPXuxODP8lrRcWyNqW0aaddMbd/sWn8yMHBSoMMBbvxa4O38P5xkx35EYVsT24rxQokpFXombYamvISkEDXQHvAmZPxDrJPHVl8zxWrK44QLiYO666TyM851PSe9dq9gBzYOA80EtT2ZaVRBQd8byD5StgXCSQOikJEra0OHevG/fv8Xir4bmRqthaEwNfCwIDAQAB",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Stopbill"
+  },
+  "permissions": ["storage", "identity"],
+  "host_permissions": ["https://gmail.googleapis.com/*"]
+}
