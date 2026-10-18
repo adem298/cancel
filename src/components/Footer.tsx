@@ -10,8 +10,8 @@ export function Footer() {
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted">{BRAND.tagline} Free, with no account.</p>
           <p className="mt-4 text-sm text-muted">
             Contact{' '}
-            <a href={`mailto:${BRAND.contactEmail}`} className="text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-accent">
-              {BRAND.contactEmail}
+            <a href={BRAND.contactUrl} target="_blank" rel="noreferrer" className="text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-accent">
+              GitHub Issues
             </a>
           </p>
         </div>

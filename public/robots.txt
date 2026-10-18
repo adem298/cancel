@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://stopbill.dev/sitemap.xml
+Sitemap: https://adem298.github.io/cancel/sitemap.xml

@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Set VITE_BASE=/cancel/ for the GitHub Pages project site. Defaults to the root.
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react(), tailwindcss()],
   server: {
     host: '0.0.0.0',

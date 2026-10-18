@@ -6,9 +6,11 @@
 export const BRAND = {
   name: 'Stopbill',
   tagline: 'Cancel ChatGPT in a few guided steps.',
-  domain: 'stopbill.dev',
-  contactEmail: 'hello@stopbill.dev',
-  extensionZip: '/downloads/stopbill-extension.zip',
+  // Temporary address until a custom domain is registered. Change siteUrl and sitemap/robots/index.html together.
+  siteUrl: 'https://adem298.github.io/cancel/',
+  contactUrl: 'https://github.com/adem298/cancel/issues',
+  // Relative so it works under the GitHub Pages sub-path and at a root domain.
+  extensionZip: 'downloads/stopbill-extension.zip',
 } as const;
 
 export const NAV_LINKS = [
