@@ -211,16 +211,28 @@ async function scanMailbox() {
       throw err;
     }
     const messages = ids.length ? await getManyMetadata(token, ids) : [];
-    const records = messages.map(summarize).map(classify).filter(Boolean);
+    const summaries = messages.map(summarize);
+    const records = summaries.map(classify).filter(Boolean);
+    // Matches the search returned but that were not recognised as receipts. Shown so the rules can be checked.
+    const unrecognised = summaries
+      .filter((s, i) => !classify(s))
+      .slice(0, 20)
+      .map((s) => ({ from: s.from, subject: s.subject, date: s.date }));
 
     mailboxes = {
       ...mailboxes,
-      [email]: { scannedAt: new Date().toISOString(), scanned: ids.length, subscriptions: dedupeLatest(records) },
+      [email]: {
+        scannedAt: new Date().toISOString(),
+        scanned: ids.length,
+        subscriptions: dedupeLatest(records),
+        unrecognised,
+      },
     };
     await chrome.storage.local.set({ [MAILBOXES_KEY]: mailboxes });
 
     const found = mailboxes[email].subscriptions.length;
-    setScanStatus(`Scanned ${ids.length} receipts for ${email}. Found ${found} AI subscription${found === 1 ? '' : 's'}.`);
+    const note = found === 0 && ids.length > 0 ? ' Emails were matched but none looked like a receipt. Details are below.' : '';
+    setScanStatus(`Scanned ${ids.length} receipts for ${email}. Found ${found} AI subscription${found === 1 ? '' : 's'}.${note}`);
     lookupInput.value = email;
     renderLookup();
   } catch (err) {
@@ -249,9 +261,23 @@ function renderLookup() {
     return;
   }
   if (mailbox.subscriptions.length === 0) {
-    lookupResult.replaceChildren(
+    const children = [
       el('p', { className: 'muted', text: `No AI-service receipts found for ${email} in the last year (scanned ${formatDate(mailbox.scannedAt)}).` }),
-    );
+    ];
+    const unrecognised = mailbox.unrecognised ?? [];
+    if (unrecognised.length) {
+      children.push(
+        el('p', { className: 'muted', text: `Matched but not recognised as receipts (${unrecognised.length} shown):` }),
+        el('ul', { className: 'subs-list' }, unrecognised.map((m) =>
+          el('li', {}, [
+            el('div', { text: m.subject || '(no subject)' }),
+            el('div', { className: 'meta', text: `From: ${m.from || 'unknown'}` }),
+            el('div', { className: 'meta', text: `Date: ${formatDate(m.date)}` }),
+          ]),
+        )),
+      );
+    }
+    lookupResult.replaceChildren(...children);
     return;
   }
   lookupResult.replaceChildren(
